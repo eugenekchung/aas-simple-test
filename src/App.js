@@ -2,7 +2,7 @@ import './App.css';
 import { useState, useEffect } from 'react';
 
 // Sample questions - you'll add your real ones here
-import { questionBank } from './questions';
+import { questionBank } from './questions.js';
 
 function App() {
   // State management
