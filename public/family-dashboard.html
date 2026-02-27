@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Family Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #0d1117;
+      --surface:     #161b22;
+      --surface2:    #21262d;
+      --border:      #30363d;
+      --text:        #f0f6fc;
+      --muted:       #8b949e;
+      --tilly:       #2dd4bf;
+      --tilly-dk:    #0d9488;
+      --tilly-glow:  rgba(45,212,191,0.18);
+      --theo:        #60a5fa;
+      --theo-dk:     #2563eb;
+      --theo-glow:   rgba(96,165,250,0.18);
+      --parent:      #94a3b8;
+      --parent-dk:   #475569;
+      --green:       #4ade80;
+      --green-dk:    #16a34a;
+      --r-lg:        22px;
+      --r-md:        14px;
+    }
+
+    *, *::before, *::after {
+      margin: 0; padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ─── VIEWS ─────────────────────────────────── */
+    .view {
+      position: fixed; inset: 0;
+      transition: opacity .3s ease, transform .3s ease;
+    }
+    .view.hidden {
+      opacity: 0; transform: translateX(48px);
+      pointer-events: none;
+    }
+
+    /* ─── DASHBOARD ──────────────────────────────── */
+    #dashboard {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100vh;
+      padding: 28px 32px 24px;
+      gap: 20px;
+    }
+
+    /* Header */
+    .dash-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    #clock {
+      font-size: 96px;
+      font-weight: 900;
+      letter-spacing: -6px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .date-block { text-align: right; }
+    #day-name   { font-size: 44px; font-weight: 800; line-height: 1; }
+    #date-full  { font-size: 22px; color: var(--muted); font-weight: 500; margin-top: 6px; }
+
+    /* Cards */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .member-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 28px 22px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 14px;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .member-card:active { transform: scale(0.97); }
+    .member-card.tilly-c { border-color: var(--tilly-dk); box-shadow: 0 0 48px var(--tilly-glow); }
+    .member-card.theo-c  { border-color: var(--theo-dk);  box-shadow: 0 0 48px var(--theo-glow); }
+
+    .avatar {
+      width: 108px; height: 108px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px; font-weight: 900;
+    }
+    .tilly-c .avatar { background: linear-gradient(135deg, var(--tilly-dk), var(--tilly)); color:#fff; }
+    .theo-c  .avatar { background: linear-gradient(135deg, var(--theo-dk),  var(--theo));  color:#fff; }
+    .parent-c .avatar { background: linear-gradient(135deg, var(--parent-dk), var(--parent)); color:#fff; }
+
+    .m-name { font-size: 30px; font-weight: 800; }
+    .m-age  { font-size: 16px; color: var(--muted); margin-top: -6px; }
+    .m-hint { font-size: 13px; color: var(--muted); opacity: .7; }
+
+    .card-bar-wrap { width: 100%; }
+    .card-bar-lbl  { font-size: 14px; color: var(--muted); margin-bottom: 7px; font-weight: 500; }
+    .mini-bar { background: var(--border); border-radius: 100px; height: 8px; overflow: hidden; }
+    .mini-fill { height: 100%; border-radius: 100px; transition: width .6s ease; }
+    .tilly-c .mini-fill { background: linear-gradient(90deg, var(--tilly-dk), var(--tilly)); }
+    .theo-c  .mini-fill { background: linear-gradient(90deg, var(--theo-dk),  var(--theo));  }
+    .parent-c .mini-fill { background: var(--parent); }
+
+    /* Events */
+    .events-lbl {
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px;
+    }
+    .events-row { display: flex; gap: 12px; }
+    .event-pill {
+      flex: 1; display: flex; align-items: center; gap: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 100px; padding: 14px 20px;
+    }
+    .ev-dot  { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+    .ev-time { font-size: 15px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+    .ev-name { font-size: 17px; font-weight: 600; }
+
+    /* ─── CHILD VIEW ─────────────────────────────── */
+    #child-view { display: flex; flex-direction: column; height: 100vh; }
+
+    .child-head {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 20px;
+      padding: 22px 32px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      position: relative; z-index: 10;
+    }
+    .back-btn {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-family: inherit;
+      font-size: 18px; font-weight: 600;
+      padding: 14px 24px; border-radius: 100px;
+      cursor: pointer; min-height: 54px;
+      display: flex; align-items: center; gap: 8px;
+      transition: background .15s;
+    }
+    .back-btn:active { background: var(--surface2); }
+    #child-title { font-size: 46px; font-weight: 900; line-height: 1; }
+    #child-sub   { margin-left: auto; font-size: 17px; color: var(--muted); font-weight: 500; }
+
+    .child-scroll {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+    }
+    .child-scroll::-webkit-scrollbar { width: 4px; }
+    .child-scroll::-webkit-scrollbar-track { background: transparent; }
+    .child-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .child-content {
+      padding: 32px; display: flex; flex-direction: column;
+      gap: 36px; padding-bottom: 64px;
+    }
+
+    /* Section header */
+    .sec-hdr {
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 16px;
+    }
+
+    /* Today progress card */
+    .prog-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 26px 28px;
+      margin-bottom: 18px;
+    }
+    .prog-top {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 14px;
+    }
+    .prog-lbl { font-size: 19px; color: var(--muted); font-weight: 600; }
+    .prog-num { font-size: 34px; font-weight: 800; }
+    .bar-bg {
+      background: var(--border); border-radius: 100px;
+      height: 16px; overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%; border-radius: 100px;
+      transition: width .55s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* Task list */
+    .task-list { display: flex; flex-direction: column; gap: 12px; }
+    .task-item {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: var(--r-md); padding: 22px 26px;
+      display: flex; align-items: center; gap: 20px;
+      cursor: pointer; min-height: 84px;
+      transition: all .2s ease; position: relative; overflow: hidden;
+    }
+    .task-item:active { transform: scale(0.985); }
+    .task-item.done { opacity: .68; }
+
+    .chk-ring {
+      width: 50px; height: 50px; border-radius: 50%;
+      border: 3px solid var(--border); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .35s cubic-bezier(.175,.885,.32,1.275);
+    }
+    .task-item.done .chk-ring {
+      background: var(--green-dk);
+      border-color: var(--green);
+      box-shadow: 0 0 22px rgba(74,222,128,.35);
+    }
+    .chk-icon {
+      color: #fff; font-weight: 900;
+      opacity: 0; transform: scale(0);
+      transition: opacity .3s ease, transform .35s cubic-bezier(.175,.885,.32,1.275);
+      font-size: 22px; line-height: 1;
+    }
+    .task-item.done .chk-icon { opacity: 1; transform: scale(1); }
+
+    .task-lbl {
+      font-size: 28px; font-weight: 600;
+      transition: color .2s;
+    }
+    .task-item.done .task-lbl {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    /* Weekly grid */
+    .week-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); overflow: hidden;
+    }
+    .week-table { width: 100%; border-collapse: collapse; }
+    .week-table th, .week-table td { text-align: center; padding: 14px 6px; }
+    .week-table thead tr { border-bottom: 1px solid var(--border); }
+    .week-table tbody tr { border-bottom: 1px solid var(--border); }
+    .week-table tbody tr:last-child { border-bottom: none; }
+    .wt-task {
+      text-align: left !important;
+      padding-left: 22px !important;
+      font-size: 19px; font-weight: 600;
+      white-space: nowrap; min-width: 220px;
+    }
+    .wt-day {
+      font-size: 13px; font-weight: 700;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 1px; width: 52px;
+    }
+    .wt-day.today-col { color: var(--text); }
+    .dot {
+      width: 22px; height: 22px; border-radius: 50%;
+      margin: 0 auto; transition: all .3s ease;
+    }
+    .dot.done    { background: var(--green); }
+    .dot.missed  { background: var(--border); }
+    .dot.future  { background: transparent; border: 2px dashed var(--border); }
+    .dot.pending { background: transparent; border: 2px solid var(--muted); }
+
+    /* Earnings */
+    .earn-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 30px 32px;
+    }
+    .earn-title { font-size: 38px; font-weight: 900; margin-bottom: 6px; }
+    .earn-sub   { font-size: 17px; color: var(--muted); margin-bottom: 22px; }
+
+    /* Parent modal */
+    .modal-bg {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.75);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s ease;
+    }
+    .modal-bg.show { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 64px;
+      text-align: center; max-width: 460px; width: 90%;
+      transform: scale(.9) translateY(16px);
+      transition: transform .3s cubic-bezier(.175,.885,.32,1.275);
+    }
+    .modal-bg.show .modal-box { transform: scale(1) translateY(0); }
+    .modal-ico  { font-size: 76px; line-height: 1; margin-bottom: 22px; }
+    .modal-name { font-size: 46px; font-weight: 900; margin-bottom: 12px; }
+    .modal-desc { font-size: 22px; color: var(--muted); margin-bottom: 38px; }
+    .modal-btn  {
+      background: var(--border); border: none;
+      color: var(--text); font-family: inherit;
+      font-size: 20px; font-weight: 700;
+      padding: 20px 52px; border-radius: 100px;
+      cursor: pointer; transition: background .15s;
+    }
+    .modal-btn:active { background: #3d4a5c; }
+
+    /* Confetti */
+    #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 200; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     DASHBOARD VIEW
+════════════════════════════════════════ -->
+<div id="dashboard" class="view">
+
+  <!-- Clock + Date -->
+  <div class="dash-head">
+    <div id="clock">00:00</div>
+    <div class="date-block">
+      <div id="day-name">Friday</div>
+      <div id="date-full">27 February 2026</div>
+    </div>
+  </div>
+
+  <!-- Family Cards -->
+  <div class="cards-grid">
+
+    <div class="member-card parent-c" onclick="showParent('Eugene')">
+      <div class="avatar">E</div>
+      <div class="m-name">Eugene</div>
+      <div class="card-bar-wrap">
+        <div class="card-bar-lbl">4 / 5 done</div>
+        <div class="mini-bar"><div class="mini-fill" style="width:80%"></div></div>
+      </div>
+    </div>
+
+    <div class="member-card parent-c" onclick="showParent('Nellie')">
+      <div class="avatar">N</div>
+      <div class="m-name">Nellie</div>
+      <div class="card-bar-wrap">
+        <div class="card-bar-lbl">3 / 5 done</div>
+        <div class="mini-bar"><div class="mini-fill" style="width:60%"></div></div>
+      </div>
+    </div>
+
+    <div class="member-card tilly-c" onclick="goChild('tilly')">
+      <div class="avatar">Ti</div>
+      <div class="m-name">Tilly</div>
+      <div class="m-age">Age 10</div>
+      <div class="card-bar-wrap">
+        <div class="card-bar-lbl" id="tilly-lbl">0 / 5 done</div>
+        <div class="mini-bar"><div class="mini-fill" id="tilly-bar" style="width:0%"></div></div>
+      </div>
+      <div class="m-hint">Tap to view ›</div>
+    </div>
+
+    <div class="member-card theo-c" onclick="goChild('theo')">
+      <div class="avatar">Th</div>
+      <div class="m-name">Theo</div>
+      <div class="m-age">Age 8</div>
+      <div class="card-bar-wrap">
+        <div class="card-bar-lbl" id="theo-lbl">0 / 5 done</div>
+        <div class="mini-bar"><div class="mini-fill" id="theo-bar" style="width:0%"></div></div>
+      </div>
+      <div class="m-hint">Tap to view ›</div>
+    </div>
+
+  </div>
+
+  <!-- Today's Events -->
+  <div>
+    <div class="events-lbl">Today's Schedule</div>
+    <div class="events-row">
+      <div class="event-pill">
+        <div class="ev-dot" style="background:#0d9488"></div>
+        <div class="ev-time">3:30 pm</div>
+        <div class="ev-name">Tilly — Swimming</div>
+      </div>
+      <div class="event-pill">
+        <div class="ev-dot" style="background:#2563eb"></div>
+        <div class="ev-time">4:00 pm</div>
+        <div class="ev-name">Theo — Football</div>
+      </div>
+      <div class="event-pill">
+        <div class="ev-dot" style="background:#8b5cf6"></div>
+        <div class="ev-time">6:30 pm</div>
+        <div class="ev-name">Family — Grandma's dinner</div>
+      </div>
+      <div class="event-pill">
+        <div class="ev-dot" style="background:#94a3b8"></div>
+        <div class="ev-time">8:00 pm</div>
+        <div class="ev-name">Bedtime — kids</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════
+     CHILD VIEW
+════════════════════════════════════════ -->
+<div id="child-view" class="view hidden">
+
+  <div class="child-head">
+    <button class="back-btn" onclick="goDash()">← Back</button>
+    <div id="child-title">Tilly</div>
+    <div id="child-sub"></div>
+  </div>
+
+  <div class="child-scroll">
+    <div class="child-content">
+
+      <!-- Today's Tasks -->
+      <div>
+        <div class="sec-hdr">Today's Tasks</div>
+
+        <div class="prog-card">
+          <div class="prog-top">
+            <div class="prog-lbl">Tasks completed</div>
+            <div class="prog-num" id="task-frac">0 / 5</div>
+          </div>
+          <div class="bar-bg">
+            <div class="bar-fill" id="task-bar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="task-list" id="task-list"></div>
+      </div>
+
+      <!-- This Week -->
+      <div>
+        <div class="sec-hdr">This Week</div>
+        <div class="week-card">
+          <table class="week-table" id="week-table">
+            <thead><tr><th class="wt-task"></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Allowance / Earnings -->
+      <div>
+        <div class="sec-hdr">Allowance</div>
+        <div class="earn-card">
+          <div class="earn-title" id="earn-lbl">Let's get started! 🌟</div>
+          <div class="earn-sub">Weekly allowance — keep going!</div>
+          <div class="bar-bg">
+            <div class="bar-fill" id="earn-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- Parent Modal -->
+<div class="modal-bg" id="parent-modal" onclick="hideParent()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-ico">🔐</div>
+    <div class="modal-name" id="modal-name">Eugene</div>
+    <div class="modal-desc">Parent view coming soon!</div>
+    <button class="modal-btn" onclick="hideParent()">Got it</button>
+  </div>
+</div>
+
+<!-- Confetti canvas -->
+<canvas id="confetti-canvas"></canvas>
+
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+const TASKS = [
+  { id:'reading',   label:'Reading',           emoji:'📖' },
+  { id:'dishes',    label:'Unpack dishwasher', emoji:'🍽️' },
+  { id:'tidy',      label:'Tidy room',          emoji:'🧹' },
+  { id:'homework',  label:'Homework',           emoji:'✏️' },
+  { id:'medicine',  label:'Take medicine',      emoji:'💊' },
+];
+
+const COLORS = {
+  tilly: { accent:'#2dd4bf', dark:'#0d9488' },
+  theo:  { accent:'#60a5fa', dark:'#2563eb' },
+};
+
+// Dummy weekly data [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+// Values for past days; today & future are handled dynamically
+const DUMMY = {
+  tilly: {
+    reading:  [true,  true,  false, true,  false, false, false],
+    dishes:   [true,  false, true,  true,  false, false, false],
+    tidy:     [true,  true,  true,  false, false, false, false],
+    homework: [false, true,  true,  true,  false, false, false],
+    medicine: [true,  true,  true,  true,  false, false, false],
+  },
+  theo: {
+    reading:  [true,  false, true,  true,  false, false, false],
+    dishes:   [true,  true,  false, true,  false, false, false],
+    tidy:     [false, true,  true,  true,  false, false, false],
+    homework: [true,  true,  false, false, false, false, false],
+    medicine: [true,  true,  true,  true,  false, false, false],
+  },
+};
+
+const EARN_LABELS = [
+  "Let's get started! 🌟",
+  "Great start! 🎉",
+  "Keep it up! 💪",
+  "Good progress! 🚀",
+  "Almost there! ⭐",
+  "Bonus unlocked! 🏆",
+];
+
+// Live task state (persists for the session)
+const state = {
+  tilly: { reading:false, dishes:false, tidy:false, homework:false, medicine:false },
+  theo:  { reading:false, dishes:false, tidy:false, homework:false, medicine:false },
+};
+
+let activeChild = null;
+
+// ══════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════
+const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+
+function tick() {
+  const n = new Date();
+  const h = String(n.getHours()).padStart(2,'0');
+  const m = String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = h + ':' + m;
+  document.getElementById('day-name').textContent  = DAYS[n.getDay()];
+  document.getElementById('date-full').textContent = n.getDate() + ' ' + MONTHS[n.getMonth()] + ' ' + n.getFullYear();
+  const sub = DAYS[n.getDay()] + ', ' + n.getDate() + ' ' + MONTHS[n.getMonth()];
+  document.getElementById('child-sub').textContent = sub;
+}
+setInterval(tick, 1000);
+tick();
+
+// ══════════════════════════════════════════
+// TODAY INDEX  (Mon=0 … Sun=6)
+// ══════════════════════════════════════════
+function todayIdx() {
+  const d = new Date().getDay(); // 0=Sun
+  return d === 0 ? 6 : d - 1;
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function goChild(child) {
+  activeChild = child;
+  const c = COLORS[child];
+  const name = child === 'tilly' ? 'Tilly' : 'Theo';
+
+  const titleEl = document.getElementById('child-title');
+  titleEl.textContent = name;
+  titleEl.style.color = c.accent;
+
+  // colour the progress bars
+  document.getElementById('task-bar').style.background =
+    `linear-gradient(90deg, ${c.dark}, ${c.accent})`;
+  document.getElementById('earn-bar').style.background =
+    `linear-gradient(90deg, ${c.dark}, ${c.accent})`;
+
+  renderTasks(child);
+  renderWeek(child);
+  updateProgress(child);
+
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('child-view').classList.remove('hidden');
+  document.querySelector('.child-scroll').scrollTop = 0;
+}
+
+function goDash() {
+  document.getElementById('child-view').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  syncCards();
+}
+
+function showParent(name) {
+  document.getElementById('modal-name').textContent = name;
+  document.getElementById('parent-modal').classList.add('show');
+}
+function hideParent() {
+  document.getElementById('parent-modal').classList.remove('show');
+}
+
+// ══════════════════════════════════════════
+// TASK RENDERING
+// ══════════════════════════════════════════
+function renderTasks(child) {
+  const list = document.getElementById('task-list');
+  list.innerHTML = TASKS.map(t => {
+    const done = state[child][t.id];
+    return `<div class="task-item${done?' done':''}" id="ti-${t.id}"
+                 onclick="tap('${child}','${t.id}')">
+              <div class="chk-ring"><span class="chk-icon">✓</span></div>
+              <div class="task-lbl">${t.emoji} ${t.label}</div>
+            </div>`;
+  }).join('');
+}
+
+function tap(child, id) {
+  if (state[child][id]) return; // no unchecking
+  state[child][id] = true;
+
+  const el = document.getElementById('ti-' + id);
+  if (el) {
+    el.classList.add('done');
+    el.style.transform = 'scale(1.025)';
+    setTimeout(() => el.style.transform = '', 220);
+  }
+
+  updateProgress(child);
+  renderWeek(child);
+  syncCards();
+}
+
+// ══════════════════════════════════════════
+// PROGRESS & EARNINGS
+// ══════════════════════════════════════════
+function countDone(child) {
+  return Object.values(state[child]).filter(Boolean).length;
+}
+
+function updateProgress(child) {
+  const done  = countDone(child);
+  const total = TASKS.length;
+  const pct   = (done / total) * 100;
+
+  document.getElementById('task-frac').textContent = done + ' / ' + total;
+  document.getElementById('task-bar').style.width  = pct + '%';
+
+  document.getElementById('earn-lbl').textContent  = EARN_LABELS[done];
+  document.getElementById('earn-bar').style.width  = pct + '%';
+
+  if (done === total) setTimeout(confetti, 350);
+}
+
+function syncCards() {
+  ['tilly','theo'].forEach(c => {
+    const done = countDone(c);
+    const pct  = (done / TASKS.length) * 100;
+    document.getElementById(c + '-lbl').textContent  = done + ' / ' + TASKS.length + ' done';
+    document.getElementById(c + '-bar').style.width  = pct + '%';
+  });
+}
+
+// ══════════════════════════════════════════
+// WEEKLY GRID
+// ══════════════════════════════════════════
+const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function renderWeek(child) {
+  const ti  = todayIdx();
+  const tbl = document.getElementById('week-table');
+  const dum = DUMMY[child];
+
+  // Build merged week data
+  const wd = {};
+  TASKS.forEach(t => {
+    const row = [...dum[t.id]];      // copy dummy
+    row[ti] = state[child][t.id];    // today: live value
+    for (let i = ti + 1; i < 7; i++) row[i] = null; // future: null
+    wd[t.id] = row;
+  });
+
+  // thead
+  const thead = tbl.querySelector('thead tr');
+  thead.innerHTML = '<th class="wt-task"></th>' +
+    DAY_LABELS.map((d, i) =>
+      `<th class="wt-day${i===ti?' today-col':''}">${d}</th>`
+    ).join('');
+
+  // tbody
+  const tbody = tbl.querySelector('tbody');
+  tbody.innerHTML = TASKS.map(t =>
+    `<tr>
+      <td class="wt-task">${t.emoji} ${t.label}</td>
+      ${wd[t.id].map((v, i) => {
+        let cls;
+        if (i > ti)       cls = 'future';
+        else if (v===null) cls = 'future';
+        else if (v)        cls = 'done';
+        else if (i===ti)   cls = 'pending';
+        else               cls = 'missed';
+        return `<td><div class="dot ${cls}"></div></td>`;
+      }).join('')}
+    </tr>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════
+// CONFETTI
+// ══════════════════════════════════════════
+let confActive = false;
+
+function confetti() {
+  if (confActive) return;
+  confActive = true;
+
+  const cv  = document.getElementById('confetti-canvas');
+  const ctx = cv.getContext('2d');
+  cv.width  = window.innerWidth;
+  cv.height = window.innerHeight;
+
+  const COLS = ['#2dd4bf','#60a5fa','#f472b6','#facc15','#4ade80','#a78bfa','#fb923c','#f87171'];
+
+  const pts = Array.from({length:220}, () => ({
+    x:  Math.random() * cv.width,
+    y: -30 - Math.random() * 180,
+    vx: (Math.random() - .5) * 8,
+    vy: 2 + Math.random() * 5,
+    g:  .1 + Math.random() * .08,
+    col: COLS[Math.floor(Math.random() * COLS.length)],
+    w:  7 + Math.random() * 13,
+    h:  4 + Math.random() * 6,
+    rot: Math.random() * 360,
+    rs: (Math.random() - .5) * 10,
+    a: 1,
+  }));
+
+  let frame = 0;
+  const MAX = 240;
+
+  (function draw() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    pts.forEach(p => {
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.vy += p.g;
+      p.rot += p.rs;
+      if (frame > MAX * .55) p.a = Math.max(0, p.a - .018);
+
+      ctx.save();
+      ctx.globalAlpha = p.a;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.col;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.w/2, p.h/2, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    frame++;
+    if (frame < MAX) {
+      requestAnimationFrame(draw);
+    } else {
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      confActive = false;
+    }
+  })();
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+syncCards();
+</script>
+</body>
+</html>
